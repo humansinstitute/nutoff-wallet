@@ -11,7 +11,6 @@ import { join } from "path";
 import { WalletDb } from "./db";
 import dns from "node:dns";
 dns.setDefaultResultOrder("ipv4first");
-
 export interface CashuWalletConfig {
   mintUrl?: string;
   walletDbPath?: string;
@@ -185,7 +184,6 @@ export class CashuWalletService {
 
   async createMintQuote(amount: number): Promise<MintQuoteResult> {
     await this.ensureWalletInitialized();
-
     if (!amount || amount <= 0) {
       throw new Error("Invalid amount. Please provide a positive number.");
     }
@@ -197,7 +195,6 @@ export class CashuWalletService {
         `Error creating mint quote: ${quote.error} ${quote.code} ${quote.detail}`,
       );
     }
-
     // Save mint quote to database
     this.walletDb.saveMintQuote({
       mintUrl: this.mintUrl,
@@ -206,7 +203,7 @@ export class CashuWalletService {
       request: quote.request,
       amount: amount,
       unit: this.unit,
-      expiry: Math.floor(Date.now() / 1000) + 3600, // 1 hour expiry
+      expiry: quote.expiry,
     });
 
     return {

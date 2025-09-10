@@ -268,6 +268,7 @@ server.registerTool(
   async () => {
     try {
       const lud06Info = walletService.getLUD06Info();
+
       return {
         content: [
           {
