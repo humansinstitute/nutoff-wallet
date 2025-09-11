@@ -285,6 +285,17 @@ export class CashuWalletService {
 
     this.walletDb = new WalletDb(this.walletDbPath);
     this.quotePoolManager = new QuotePoolManager(this);
+    console.log("CashuWalletService initialized, with config:");
+    console.log(
+      this.mintUrl,
+      this.walletDbPath,
+      this.unit,
+      this.lud06Callback,
+      this.lud06MaxSendable,
+      this.lud06MinSendable,
+      this.lud06Metadata,
+      this.lud06Tag,
+    );
   }
 
   private async ensureWalletInitialized(): Promise<void> {

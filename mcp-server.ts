@@ -317,6 +317,8 @@ const allowedPublicKeys = process.env.ALLOWED_PUBLIC_KEYS
       .filter((key) => key.length > 0)
   : undefined;
 
+console.log("Allowed public keys:", allowedPublicKeys);
+
 const transport = new NostrServerTransport({
   relayHandler: new ApplesauceRelayPool(relayUrls),
   signer: new PrivateKeySigner(serverPrivateKey),
@@ -324,7 +326,11 @@ const transport = new NostrServerTransport({
   excludedCapabilities: [
     {
       method: "tools/call",
-      name: "mint-ecash",
+      name: "make_invoice",
+    },
+    {
+      method: "tools/call",
+      name: "lookup_invoice",
     },
     {
       method: "tools/list",
