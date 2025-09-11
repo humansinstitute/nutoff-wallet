@@ -11,6 +11,17 @@ import { join } from "path";
 import { WalletDb } from "./db";
 import dns from "node:dns";
 dns.setDefaultResultOrder("ipv4first");
+
+interface QuotePoolItem {
+  quoteId: string;
+  amount: number;
+  expiry: number;
+}
+
+interface QuotePoolConfig {
+  checkIntervalMs?: number;
+  maxConcurrentChecks?: number;
+}
 export interface CashuWalletConfig {
   mintUrl?: string;
   walletDbPath?: string;
@@ -111,10 +122,135 @@ export interface LUD06InfoResult {
   tag: string;
 }
 
+class QuotePoolManager {
+  private quotes: Map<string, QuotePoolItem> = new Map();
+  private isRunning = false;
+  private checkInterval?: Timer;
+  private readonly config: Required<QuotePoolConfig>;
+  private readonly walletService: CashuWalletService;
+
+  constructor(walletService: CashuWalletService, config: QuotePoolConfig = {}) {
+    this.walletService = walletService;
+    this.config = {
+      checkIntervalMs: config.checkIntervalMs || 5000,
+      maxConcurrentChecks: config.maxConcurrentChecks || 5,
+    };
+  }
+
+  addQuote(quoteId: string, amount: number, expiry: number): void {
+    this.quotes.set(quoteId, {
+      quoteId,
+      amount,
+      expiry,
+    });
+
+    if (!this.isRunning) {
+      this.start();
+    }
+  }
+
+  removeQuote(quoteId: string): void {
+    this.quotes.delete(quoteId);
+
+    if (this.quotes.size === 0) {
+      this.stop();
+    }
+  }
+
+  private start(): void {
+    if (this.isRunning) return;
+
+    this.isRunning = true;
+    this.checkInterval = setInterval(() => {
+      this.checkQuotes();
+    }, this.config.checkIntervalMs);
+  }
+
+  private stop(): void {
+    if (!this.isRunning) return;
+
+    this.isRunning = false;
+    if (this.checkInterval) {
+      clearInterval(this.checkInterval);
+      this.checkInterval = undefined;
+    }
+  }
+
+  private async checkQuotes(): Promise<void> {
+    // Clean up expired quotes first
+    this.cleanupExpiredQuotes();
+
+    const quotesToCheck = Array.from(this.quotes.values()).slice(
+      0,
+      this.config.maxConcurrentChecks,
+    );
+
+    if (quotesToCheck.length === 0) {
+      return;
+    }
+
+    await Promise.allSettled(
+      quotesToCheck.map((quote) => this.checkAndMintQuote(quote)),
+    );
+  }
+
+  private async checkAndMintQuote(quote: QuotePoolItem): Promise<void> {
+    try {
+      const status = await this.walletService.checkMintQuote(quote.quoteId);
+
+      if (status.isPaid && !status.isIssued) {
+        console.log(`Quote ${quote.quoteId} is paid, minting proofs...`);
+        await this.walletService.mintProofs(quote.quoteId, quote.amount);
+        console.log(`Successfully minted proofs for quote ${quote.quoteId}`);
+        this.removeQuote(quote.quoteId);
+      } else if (status.isIssued) {
+        console.log(
+          `Quote ${quote.quoteId} is already issued, removing from pool`,
+        );
+        this.removeQuote(quote.quoteId);
+      }
+    } catch (error) {
+      console.error(`Error checking/minting quote ${quote.quoteId}:`, error);
+      // Continue checking on next interval, don't remove quote due to errors
+    }
+  }
+
+  private cleanupExpiredQuotes(): void {
+    let removedCount = 0;
+
+    for (const [quoteId, quote] of this.quotes.entries()) {
+      if (Math.floor(Date.now() / 1000) > quote.expiry) {
+        this.quotes.delete(quoteId);
+        removedCount++;
+      }
+    }
+
+    if (removedCount > 0) {
+      console.log(`Cleaned up ${removedCount} expired quotes from pool`);
+    }
+
+    if (this.quotes.size === 0) {
+      this.stop();
+    }
+  }
+
+  getPoolStatus(): { active: number } {
+    return {
+      active: this.quotes.size,
+    };
+  }
+
+  destroy(): void {
+    this.stop();
+    this.quotes.clear();
+  }
+}
+
 export class CashuWalletService {
   private walletDb: WalletDb;
   private cashuWallet: CashuWallet | null = null;
   private cashuMint: CashuMint | null = null;
+  private quotePoolManager: QuotePoolManager;
 
   private readonly mintUrl: string;
   private readonly walletDbPath: string;
@@ -148,6 +284,7 @@ export class CashuWalletService {
     this.lud06Tag = config.lud06Tag || process.env.LUD06_TAG || "payRequest";
 
     this.walletDb = new WalletDb(this.walletDbPath);
+    this.quotePoolManager = new QuotePoolManager(this);
   }
 
   private async ensureWalletInitialized(): Promise<void> {
@@ -206,11 +343,14 @@ export class CashuWalletService {
       expiry: quote.expiry,
     });
 
+    // Add quote to the monitoring pool for automatic minting
+    this.quotePoolManager.addQuote(quote.quote, amount, quote.expiry);
+
     return {
       quoteId: quote.quote,
       lightningInvoice: quote.request,
       amount,
-      expiry: Math.floor(Date.now() / 1000) + 3600,
+      expiry: quote.expiry,
     };
   }
 
@@ -590,8 +730,15 @@ export class CashuWalletService {
   }
 
   close(): void {
+    if (this.quotePoolManager) {
+      this.quotePoolManager.destroy();
+    }
     if (this.walletDb) {
       this.walletDb.close();
     }
+  }
+
+  getQuotePoolStatus(): { active: number } {
+    return this.quotePoolManager.getPoolStatus();
   }
 }
