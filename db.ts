@@ -11,31 +11,6 @@ const MIGRATIONS: readonly Migration[] = [
   {
     id: "001_initial",
     sql: `
-      CREATE TABLE IF NOT EXISTS cashu_mints (
-        mintUrl   TEXT PRIMARY KEY,
-        name      TEXT NOT NULL,
-        mintInfo  TEXT NOT NULL,
-        createdAt INTEGER NOT NULL,
-        updatedAt INTEGER NOT NULL
-      );
-
-      CREATE TABLE IF NOT EXISTS cashu_keysets (
-        mintUrl   TEXT NOT NULL,
-        id        TEXT NOT NULL,
-        keypairs  TEXT NOT NULL,
-        active    INTEGER NOT NULL,
-        feePpk    INTEGER NOT NULL,
-        updatedAt INTEGER NOT NULL,
-        PRIMARY KEY (mintUrl, id)
-      );
-
-      CREATE TABLE IF NOT EXISTS cashu_counters (
-        mintUrl  TEXT NOT NULL,
-        keysetId TEXT NOT NULL,
-        counter  INTEGER NOT NULL,
-        PRIMARY KEY (mintUrl, keysetId)
-      );
-
       CREATE TABLE IF NOT EXISTS cashu_proofs (
         mintUrl   TEXT NOT NULL,
         id        TEXT NOT NULL,
@@ -97,13 +72,13 @@ export class SqliteDb {
 
   private initialize(): void {
     // Ensure pragmas for current connection and create migrations tracking table
-    this.db.exec(`
+    this.db.run(`
       PRAGMA foreign_keys = ON;
       PRAGMA journal_mode = WAL;
       PRAGMA synchronous = NORMAL;
     `);
 
-    this.db.exec(`
+    this.db.run(`
       CREATE TABLE IF NOT EXISTS cashu_migrations (
         id        TEXT PRIMARY KEY,
         appliedAt INTEGER NOT NULL
@@ -221,35 +196,6 @@ export class WalletDb {
     this.db = new SqliteDb(filename);
   }
 
-  // Mint operations
-  getMint(mintUrl: string): WalletMint | undefined {
-    return this.db.get<WalletMint>(
-      "SELECT * FROM cashu_mints WHERE mintUrl = ?",
-      [mintUrl],
-    );
-  }
-
-  saveMint(mint: WalletMint): void {
-    const existing = this.getMint(mint.mintUrl);
-    if (existing) {
-      this.db.run(
-        "UPDATE cashu_mints SET name = ?, mintInfo = ?, updatedAt = ? WHERE mintUrl = ?",
-        [mint.name, mint.mintInfo, getUnixTimeSeconds(), mint.mintUrl],
-      );
-    } else {
-      this.db.run(
-        "INSERT INTO cashu_mints (mintUrl, name, mintInfo, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?)",
-        [
-          mint.mintUrl,
-          mint.name,
-          mint.mintInfo,
-          getUnixTimeSeconds(),
-          getUnixTimeSeconds(),
-        ],
-      );
-    }
-  }
-
   // Proof operations
   getProofs(
     mintUrl: string,
@@ -355,46 +301,6 @@ export class WalletDb {
     this.db.run(
       "UPDATE cashu_mint_quotes SET state = ? WHERE mintUrl = ? AND quote = ?",
       [state, mintUrl, quote],
-    );
-  }
-
-  // Keyset operations
-  getKeyset(mintUrl: string, keysetId: string): WalletKeyset | undefined {
-    return this.db.get<WalletKeyset>(
-      "SELECT * FROM cashu_keysets WHERE mintUrl = ? AND id = ?",
-      [mintUrl, keysetId],
-    );
-  }
-
-  saveKeyset(keyset: WalletKeyset): void {
-    this.db.run(
-      `INSERT OR REPLACE INTO cashu_keysets 
-       (mintUrl, id, keypairs, active, feePpk, updatedAt) 
-       VALUES (?, ?, ?, ?, ?, ?)`,
-      [
-        keyset.mintUrl,
-        keyset.id,
-        keyset.keypairs,
-        keyset.active,
-        keyset.feePpk,
-        keyset.updatedAt,
-      ],
-    );
-  }
-
-  // Counter operations
-  getCounter(mintUrl: string, keysetId: string): number {
-    const result = this.db.get<{ counter: number }>(
-      "SELECT counter FROM cashu_counters WHERE mintUrl = ? AND keysetId = ?",
-      [mintUrl, keysetId],
-    );
-    return result?.counter || 0;
-  }
-
-  setCounter(mintUrl: string, keysetId: string, counter: number): void {
-    this.db.run(
-      "INSERT OR REPLACE INTO cashu_counters (mintUrl, keysetId, counter) VALUES (?, ?, ?)",
-      [mintUrl, keysetId, counter],
     );
   }
 

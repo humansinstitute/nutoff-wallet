@@ -189,6 +189,39 @@ server.registerTool(
   },
 );
 
+// Send eCash Tool
+server.registerTool(
+  "send-ecash",
+  {
+    title: "Send eCash",
+    description: "Create an eCash token",
+    inputSchema: {
+      amount: z.number().positive("Amount must be positive"),
+    },
+  },
+  async ({ amount }) => {
+    const result = await walletService.sendEcash(amount);
+    return {
+      content: [
+        {
+          type: "text",
+          text: JSON.stringify(
+            {
+              sentAmount: result.sentAmount,
+              keepAmount: result.keepAmount,
+              cashuToken: result.cashuToken,
+              proofCount: result.sentProofs.length,
+              timestamp: new Date().toISOString(),
+            },
+            null,
+            2,
+          ),
+        },
+      ],
+    };
+  },
+);
+
 // lookup_invoice - NWC format (equivalent to check-mint-quote)
 server.registerTool(
   "lookup_invoice",
@@ -327,6 +360,10 @@ const transport = new NostrServerTransport({
     {
       method: "tools/call",
       name: "make_invoice",
+    },
+    {
+      method: "tools/call",
+      name: "get_info",
     },
     {
       method: "tools/call",
