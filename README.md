@@ -1,3 +1,5 @@
+⚠️ This project is for educational and testing purposes. Use at your own risk.
+
 # Nutoff Wallet
 
 A command-line interface and MCP server interface implementing a Cashu wallet, built with TypeScript, ContextVM, Cashu-ts, and Bun. This wallet allows you to mint, send, receive, and manage eCash tokens. Also thanks to the MCP interface and the nostr transport provided by the ContextVM sdk you can use and manage your wallet remotely

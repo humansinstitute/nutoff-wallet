@@ -161,10 +161,8 @@ server.registerTool(
                 description_hash: description_hash || "",
                 payment_hash: result.quoteId, // Using quoteId as payment_hash
                 amount: amount,
-                fees_paid: 0,
                 created_at: Math.floor(Date.now() / 1000),
                 expires_at: result.expiry,
-                metadata: {},
               }),
               null,
               2,
@@ -191,16 +189,21 @@ server.registerTool(
 
 // Send eCash Tool
 server.registerTool(
-  "send-ecash",
+  "send_ecash",
   {
     title: "Send eCash",
     description: "Create an eCash token",
     inputSchema: {
       amount: z.number().positive("Amount must be positive"),
+      mint_url: z
+        .string()
+        .url()
+        .optional()
+        .describe("Optional mint URL to use for selecting proofs"),
     },
   },
-  async ({ amount }) => {
-    const result = await walletService.sendEcash(amount);
+  async ({ amount, mint_url }) => {
+    const result = await walletService.sendEcash(amount, mint_url);
     return {
       content: [
         {
@@ -231,14 +234,11 @@ server.registerTool(
       "Lookup invoice status in NWC API format - Use 'payment_hash' together with the quoteId to lookup a specific mint quote",
     inputSchema: {
       payment_hash: z.string().optional(),
-      invoice: z.string().optional(),
     },
   },
-  async ({ payment_hash, invoice }) => {
+  async ({ payment_hash }) => {
     try {
-      // Use payment_hash (quoteId) if provided, otherwise extract from invoice
-      const quoteId =
-        payment_hash || (invoice ? invoice.substring(0, 10) : null);
+      const quoteId = payment_hash;
 
       if (!quoteId) {
         throw new Error("Either payment_hash or invoice must be provided");
@@ -252,20 +252,10 @@ server.registerTool(
             type: "text",
             text: JSON.stringify(
               formatNWCResponse("lookup_invoice", {
-                type: "incoming",
-                state: result.isPaid ? "settled" : "pending",
-                invoice: invoice || "",
+                isPaid: result.isPaid,
+                isIssued: result.isIssued,
                 payment_hash: result.quoteId,
                 amount: result.amount,
-                fees_paid: 0,
-                created_at: Math.floor(Date.now() / 1000),
-                expires_at: result.isPaid
-                  ? Math.floor(Date.now() / 1000)
-                  : Math.floor(Date.now() / 1000) + 3600,
-                settled_at: result.isPaid
-                  ? Math.floor(Date.now() / 1000)
-                  : undefined,
-                metadata: {},
               }),
               null,
               2,

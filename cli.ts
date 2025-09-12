@@ -157,10 +157,13 @@ class CashuCLI {
     }
   }
 
-  async sendEcash(amount: number): Promise<void> {
+  async sendEcash(amount: number, mintUrl?: string): Promise<void> {
     try {
       console.log(`Sending ${amount} sats...`);
-      const sendResult = await this.walletService.sendEcash(amount);
+      if (mintUrl) {
+        console.log(`Using mint URL: ${mintUrl}`);
+      }
+      const sendResult = await this.walletService.sendEcash(amount, mintUrl);
 
       console.log(`Sent: ${sendResult.sentAmount} sats`);
       console.log(`Keep: ${sendResult.keepAmount} sats`);
@@ -306,7 +309,7 @@ async function main() {
     console.log(
       "  mint-proofs <id> <amt>   - Mint proofs from quote (advanced)",
     );
-    console.log("  send <amount>            - Send ecash and generate token");
+    console.log("  send <amount> [mint-url] - Send ecash and generate token");
     console.log("  receive <token>          - Receive ecash from token");
     console.log("  pay <invoice>            - Pay Lightning invoice");
     console.log(
@@ -373,7 +376,9 @@ async function main() {
           console.error("Please provide an amount.");
           process.exit(1);
         }
-        await cli.sendEcash(parseInt(args[1]));
+        const amount = parseInt(args[1]);
+        const mintUrl = args[2]; // Optional mint URL
+        await cli.sendEcash(amount, mintUrl);
         break;
       }
 

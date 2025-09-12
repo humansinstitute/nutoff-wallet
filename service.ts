@@ -429,15 +429,18 @@ export class CashuWalletService {
     };
   }
 
-  async sendEcash(amount: number): Promise<SendEcashResult> {
+  async sendEcash(amount: number, mintUrl?: string): Promise<SendEcashResult> {
     await this.ensureWalletInitialized();
 
     if (!amount || amount <= 0) {
       throw new Error("Invalid amount. Please provide a positive number.");
     }
 
+    // Use provided mintUrl or default to this.mintUrl
+    const targetMintUrl = mintUrl || this.mintUrl;
+
     // Get available proofs
-    const availableProofs = this.walletDb.getProofs(this.mintUrl, "ready");
+    const availableProofs = this.walletDb.getProofs(targetMintUrl, "ready");
     const totalBalance = this.sumProofs(availableProofs);
 
     if (totalBalance < amount) {
@@ -462,15 +465,15 @@ export class CashuWalletService {
       }
 
       // Save the new keep proofs as ready
-      this.walletDb.saveProofs(keep, this.mintUrl, "ready");
+      this.walletDb.saveProofs(keep, targetMintUrl, "ready");
 
       // Save the sent proofs as inflight
-      this.walletDb.saveProofs(send, this.mintUrl, "inflight");
+      this.walletDb.saveProofs(send, targetMintUrl, "inflight");
     });
 
     // Create token for sending
     const token: Token = {
-      mint: this.mintUrl,
+      mint: targetMintUrl,
       proofs: send,
     };
 
