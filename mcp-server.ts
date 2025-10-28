@@ -415,9 +415,17 @@ const allowedPublicKeys = process.env.ALLOWED_PUBLIC_KEYS
 
 console.log("Allowed public keys:", allowedPublicKeys);
 
+if (!serverPrivateKey) {
+  console.warn(
+    "SERVER_PRIVATE_KEY is not set. Generating an ephemeral key for this session.",
+  );
+}
+
+const signer = new PrivateKeySigner(serverPrivateKey);
+
 const transport = new NostrServerTransport({
   relayHandler: new ApplesauceRelayPool(relayUrls),
-  signer: new PrivateKeySigner(serverPrivateKey),
+  signer,
   // allowedPublicKeys: allowedPublicKeys,
   // excludedCapabilities: [
   //   {
@@ -452,3 +460,6 @@ process.on("SIGTERM", () => {
 });
 
 await server.connect(transport);
+
+const walletPubKey = await signer.getPublicKey();
+console.log(`[Wallet] Your Wallet PubKey is: ${walletPubKey}`);
