@@ -7,7 +7,10 @@
     "cashu": "./index.ts"
   },
   "scripts": {
-    "format": "bun run prettier --write ."
+    "format": "bun run prettier --write .",
+    "setup": "bun run --bun scripts/setup.ts",
+    "start": "bun run --bun mcp-server.ts",
+    "startup": "bun install && bun run setup && bun run start"
   },
   "devDependencies": {
     "@types/bun": "latest",
@@ -17,9 +20,9 @@
     "typescript": "^5.9.2"
   },
   "dependencies": {
-    "@cashu/cashu-ts": "^2.7.1",
-    "@contextvm/sdk": "^0.1.27",
-    "@modelcontextprotocol/sdk": "^1.17.5",
+    "@cashu/cashu-ts": "^2.7.3",
+    "@contextvm/sdk": "^0.1.37",
+    "@modelcontextprotocol/sdk": "^1.20.2",
     "zod": "^3.25.76"
   }
 }
