@@ -8,7 +8,7 @@
   },
   "scripts": {
     "format": "bun run prettier --write .",
-    "setup": "bun run --bun scripts/setup.ts && bun run start",
+    "setup": "bun install && bun run --bun scripts/setup.ts && bun run start",
     "start": "bun run --bun mcp-server.ts",
     "startup": "bun install && bun run setup"
   },

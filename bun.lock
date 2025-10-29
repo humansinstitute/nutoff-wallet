@@ -4,9 +4,9 @@
     "": {
       "name": "cashu-cli-wallet",
       "dependencies": {
-        "@cashu/cashu-ts": "^2.7.1",
-        "@contextvm/sdk": "^0.1.27",
-        "@modelcontextprotocol/sdk": "^1.17.5",
+        "@cashu/cashu-ts": "^2.7.3",
+        "@contextvm/sdk": "^0.1.37",
+        "@modelcontextprotocol/sdk": "^1.20.2",
         "zod": "^3.25.76",
       },
       "devDependencies": {
