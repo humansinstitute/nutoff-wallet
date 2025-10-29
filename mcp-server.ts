@@ -460,6 +460,5 @@ process.on("SIGTERM", () => {
 });
 
 await server.connect(transport);
-
-const walletPubKey = await signer.getPublicKey();
-console.log(`[Wallet] Your Wallet PubKey is: ${walletPubKey}`);
+const serverPublicKeyHex = await signer.getPublicKey();
+console.log(`[Wallet] Server Pubkey: ${serverPublicKeyHex}`);
