@@ -1,5 +1,5 @@
 import { existsSync, mkdirSync, copyFileSync, readFileSync, writeFileSync } from "fs";
-import { dirname, resolve } from "path";
+import { resolve } from "path";
 import { randomBytes } from "crypto";
 
 const root = resolve(".");
@@ -17,35 +17,54 @@ if (!existsSync(scriptsDir)) {
   mkdirSync(scriptsDir, { recursive: true });
 }
 
-// Copy example.env to .env (overwrites existing to guarantee a clean baseline)
-copyFileSync(exampleEnvPath, envPath);
+const envExists = existsSync(envPath);
+
+if (!envExists) {
+  copyFileSync(exampleEnvPath, envPath);
+}
 
 let envContents = readFileSync(envPath, "utf-8");
+const originalEnvContents = envContents;
+const actions: string[] = [];
 
-const privateKey = randomBytes(32).toString("hex");
+const ensureEnvValue = (key: string, value: string, options: { overwrite?: boolean; ensureUncomment?: boolean } = {}) => {
+  const { overwrite = false, ensureUncomment = false } = options;
+  const pattern = new RegExp(`^\\s*${key}=.*$`, "m");
+  const commentedPattern = new RegExp(`^\\s*#\\s*${key}=.*$`, "m");
 
-// Set SERVER_PRIVATE_KEY
-if (envContents.match(/^\s*SERVER_PRIVATE_KEY=.*$/m)) {
-  envContents = envContents.replace(/^\s*SERVER_PRIVATE_KEY=.*$/m, `SERVER_PRIVATE_KEY=${privateKey}`);
+  if (envContents.match(pattern)) {
+    if (overwrite) {
+      envContents = envContents.replace(pattern, `${key}=${value}`);
+      actions.push(`${key} set to ${value}`);
+    }
+  } else if (ensureUncomment && envContents.match(commentedPattern)) {
+    envContents = envContents.replace(commentedPattern, `${key}=${value}`);
+    actions.push(`${key} uncommented and set to ${value}`);
+  } else {
+    envContents += `\n${key}=${value}\n`;
+    actions.push(`${key} added with default ${value}`);
+  }
+};
+
+const serverKeyMatch = envContents.match(/^\s*SERVER_PRIVATE_KEY=(.*)$/m);
+const existingPrivateKey = serverKeyMatch?.[1]?.trim();
+
+if (!existingPrivateKey) {
+  const privateKey = randomBytes(32).toString("hex");
+  if (serverKeyMatch) {
+    envContents = envContents.replace(/^\s*SERVER_PRIVATE_KEY=.*$/m, `SERVER_PRIVATE_KEY=${privateKey}`);
+  } else {
+    envContents += `\nSERVER_PRIVATE_KEY=${privateKey}\n`;
+  }
+  actions.push("SERVER_PRIVATE_KEY generated");
 } else {
-  envContents += `\nSERVER_PRIVATE_KEY=${privateKey}\n`;
+  actions.push("SERVER_PRIVATE_KEY preserved");
 }
 
-// Set MINT_URL
-if (envContents.match(/^\s*MINT_URL=.*$/m)) {
-  envContents = envContents.replace(/^\s*MINT_URL=.*$/m, "MINT_URL=https://mint.minibits.cash/Bitcoin");
-} else {
-  envContents += "\nMINT_URL=https://mint.minibits.cash/Bitcoin\n";
-}
+ensureEnvValue("MINT_URL", "https://mint.minibits.cash/Bitcoin");
 
 // Ensure CASHU_WALLET_DB is uncommented and set
-if (envContents.match(/^\s*#\s*CASHU_WALLET_DB=.*$/m)) {
-  envContents = envContents.replace(/^\s*#\s*CASHU_WALLET_DB=.*$/m, "CASHU_WALLET_DB=./wallet.sqlite");
-} else if (envContents.match(/^\s*CASHU_WALLET_DB=.*$/m)) {
-  envContents = envContents.replace(/^\s*CASHU_WALLET_DB=.*$/m, "CASHU_WALLET_DB=./wallet.sqlite");
-} else {
-  envContents += "\nCASHU_WALLET_DB=./wallet.sqlite\n";
-}
+ensureEnvValue("CASHU_WALLET_DB", "./wallet.sqlite", { ensureUncomment: true });
 
 // Ensure NOSTR_RELAYS comments and value are set
 const nostrRelayCommentBlock = "# Nostr relay URLs (comma-separated list)\n# Example: NOSTR_RELAYS=wss://relay.contextvm.org";
@@ -58,17 +77,13 @@ if (envContents.includes("# Nostr relay URLs (comma-separated list)")) {
   envContents += `\n${nostrRelayCommentBlock}\n`;
 }
 
-if (envContents.match(/^\s*NOSTR_RELAYS=.*$/m)) {
-  envContents = envContents.replace(/^\s*NOSTR_RELAYS=.*$/m, "NOSTR_RELAYS=wss://relay.contextvm.org");
-} else {
-  envContents += "\nNOSTR_RELAYS=wss://relay.contextvm.org\n";
+ensureEnvValue("NOSTR_RELAYS", "wss://relay.contextvm.org");
+
+if (envContents !== originalEnvContents) {
+  writeFileSync(envPath, envContents);
 }
 
-writeFileSync(envPath, envContents);
-
-console.log(".env configured:");
-console.log(`- MINT_URL set to https://mint.minibits.cash/Bitcoin`);
-console.log(`- CASHU_WALLET_DB set to ./wallet.sqlite`);
-console.log(`- NOSTR_RELAYS set to wss://relay.contextvm.org`);
-console.log("- SERVER_PRIVATE_KEY generated (not displayed for security).");
+console.log(".env configuration complete.");
+console.log(envExists ? "- Existing .env preserved." : "- .env created from example.env.");
+actions.forEach((action) => console.log(`- ${action}.`));
 console.log("Setup complete.");
