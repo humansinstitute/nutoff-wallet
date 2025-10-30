@@ -77,7 +77,7 @@ if (envContents.includes("# Nostr relay URLs (comma-separated list)")) {
   envContents += `\n${nostrRelayCommentBlock}\n`;
 }
 
-ensureEnvValue("NOSTR_RELAYS", "wss://relay.contextvm.org");
+ensureEnvValue("NOSTR_RELAYS", "wss://relay.contextvm.org", { overwrite: true });
 
 if (envContents !== originalEnvContents) {
   writeFileSync(envPath, envContents);
