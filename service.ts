@@ -269,7 +269,7 @@ export class CashuWalletService {
       process.env.DEFAULT_MINT ||
       process.env.CASHU_MINT_URL ||
       process.env.MINT_URL ||
-      "https://testnut.cashu.space";
+      "https://mint.minibits.cash/Bitcoin";
     this.walletDbPath =
       config.walletDbPath ||
       process.env.CASHU_WALLET_DB ||
