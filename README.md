@@ -107,7 +107,7 @@ bun run index.ts clean-pending
 
 Configure the wallet using environment variables:
 
-- `DEFAULT_MINT`: Primary mint URL to use (default: https://testnut.cashu.space)
+- `DEFAULT_MINT`: Primary mint URL to use (default: https://mint.minibits.cash/Bitcoin)
 - `CASHU_MINT_URL`, `MINT_URL`: Legacy mint variables still honored for compatibility
 - `AUTO_MINT_PAID_QUOTES`: Set to `true` to automatically mint proofs once invoices are paid (default: false)
 - `CASHU_WALLET_DB`: Path to the wallet database file (default: ./wallet.sqlite)

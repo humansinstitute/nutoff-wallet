@@ -317,7 +317,7 @@ async function main() {
     );
     console.log("\nEnvironment Variables:");
     console.log(
-      "  DEFAULT_MINT            - Mint URL (default: https://testnut.cashu.space)",
+      "  DEFAULT_MINT            - Mint URL (default: https://mint.minibits.cash/Bitcoin)",
     );
     console.log(
       "  CASHU_MINT_URL/MINT_URL - Legacy mint env vars (optional)",
