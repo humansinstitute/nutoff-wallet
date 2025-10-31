@@ -461,4 +461,4 @@ process.on("SIGTERM", () => {
 
 await server.connect(transport);
 const serverPublicKeyHex = await signer.getPublicKey();
-console.log(`[WINGMAN21-PUBKEY]<${serverPublicKeyHex}>`);
+console.log(`[WINGMAN21-PUBKEY]${serverPublicKeyHex}`);
