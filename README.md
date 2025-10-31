@@ -109,7 +109,7 @@ Configure the wallet using environment variables:
 
 - `DEFAULT_MINT`: Primary mint URL to use (default: https://mint.minibits.cash/Bitcoin)
 - `CASHU_MINT_URL`, `MINT_URL`: Legacy mint variables still honored for compatibility
-- `AUTO_MINT_PAID_QUOTES`: Set to `true` to automatically mint proofs once invoices are paid (default: false)
+- `AUTO_MINT_PAID_QUOTES`: Controls automatic minting when invoices settle (default: true)
 - `CASHU_WALLET_DB`: Path to the wallet database file (default: ./wallet.sqlite)
 
 ### LUD06 Configuration (for Lightning Address / LNURL-pay compatibility)
@@ -195,7 +195,7 @@ bun run index.ts check-mint-quote <quote-id>
 bun run index.ts mint-proofs <quote-id> 1000
 ```
 
-By default, the wallet waits for you to run `mint-proofs` before newly paid invoices affect your balance. Set `AUTO_MINT_PAID_QUOTES=true` if you prefer automatic minting.
+By default, the wallet monitors paid invoices and mints automatically (`AUTO_MINT_PAID_QUOTES=true`). Set it to `false` if you prefer to mint manually.
 
 3. **Check your balance** (auto-cleans pending proofs):
 

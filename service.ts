@@ -288,10 +288,13 @@ export class CashuWalletService {
     this.lud06Metadata =
       config.lud06Metadata || process.env.LUD06_METADATA || "";
     this.lud06Tag = config.lud06Tag || process.env.LUD06_TAG || "payRequest";
-    this.autoMintPaidQuotes =
-      typeof config.autoMintPaidQuotes === "boolean"
-        ? config.autoMintPaidQuotes
-        : process.env.AUTO_MINT_PAID_QUOTES === "true";
+    if (typeof config.autoMintPaidQuotes === "boolean") {
+      this.autoMintPaidQuotes = config.autoMintPaidQuotes;
+    } else {
+      const envAutoMint = process.env.AUTO_MINT_PAID_QUOTES;
+      this.autoMintPaidQuotes =
+        envAutoMint === undefined ? true : envAutoMint === "true";
+    }
 
     this.walletDb = new WalletDb(this.walletDbPath);
     if (this.autoMintPaidQuotes) {

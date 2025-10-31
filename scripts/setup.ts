@@ -65,6 +65,10 @@ ensureEnvValue("DEFAULT_MINT", "https://mint.minibits.cash/Bitcoin", {
   overwrite: true,
   ensureUncomment: true,
 });
+ensureEnvValue("AUTO_MINT_PAID_QUOTES", "true", {
+  overwrite: true,
+  ensureUncomment: true,
+});
 
 // Ensure CASHU_WALLET_DB is uncommented and set
 ensureEnvValue("CASHU_WALLET_DB", "./wallet.sqlite", { ensureUncomment: true });
