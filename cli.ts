@@ -317,7 +317,13 @@ async function main() {
     );
     console.log("\nEnvironment Variables:");
     console.log(
-      "  CASHU_MINT_URL          - Mint URL (default: https://testnut.cashu.space)",
+      "  DEFAULT_MINT            - Mint URL (default: https://testnut.cashu.space)",
+    );
+    console.log(
+      "  CASHU_MINT_URL/MINT_URL - Legacy mint env vars (optional)",
+    );
+    console.log(
+      "  AUTO_MINT_PAID_QUOTES   - Auto-mint paid quotes (default: false)",
     );
     console.log(
       "  CASHU_WALLET_DB         - Wallet database path (default: ./wallet.sqlite)",

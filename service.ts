@@ -31,6 +31,7 @@ export interface CashuWalletConfig {
   lud06MinSendable?: number;
   lud06Metadata?: string;
   lud06Tag?: string;
+  autoMintPaidQuotes?: boolean;
 }
 
 export interface BalanceResult {
@@ -250,7 +251,7 @@ export class CashuWalletService {
   private walletDb: WalletDb;
   private cashuWallet: CashuWallet | null = null;
   private cashuMint: CashuMint | null = null;
-  private quotePoolManager: QuotePoolManager;
+  private quotePoolManager: QuotePoolManager | null = null;
 
   private readonly mintUrl: string;
   private readonly walletDbPath: string;
@@ -260,10 +261,15 @@ export class CashuWalletService {
   private readonly lud06MinSendable: number;
   private readonly lud06Metadata: string;
   private readonly lud06Tag: string;
+  private readonly autoMintPaidQuotes: boolean;
 
   constructor(config: CashuWalletConfig = {}) {
     this.mintUrl =
-      config.mintUrl || process.env.MINT_URL || "https://testnut.cashu.space";
+      config.mintUrl ||
+      process.env.DEFAULT_MINT ||
+      process.env.CASHU_MINT_URL ||
+      process.env.MINT_URL ||
+      "https://testnut.cashu.space";
     this.walletDbPath =
       config.walletDbPath ||
       process.env.CASHU_WALLET_DB ||
@@ -282,9 +288,15 @@ export class CashuWalletService {
     this.lud06Metadata =
       config.lud06Metadata || process.env.LUD06_METADATA || "";
     this.lud06Tag = config.lud06Tag || process.env.LUD06_TAG || "payRequest";
+    this.autoMintPaidQuotes =
+      typeof config.autoMintPaidQuotes === "boolean"
+        ? config.autoMintPaidQuotes
+        : process.env.AUTO_MINT_PAID_QUOTES === "true";
 
     this.walletDb = new WalletDb(this.walletDbPath);
-    this.quotePoolManager = new QuotePoolManager(this);
+    if (this.autoMintPaidQuotes) {
+      this.quotePoolManager = new QuotePoolManager(this);
+    }
     console.log("CashuWalletService initialized");
     console.log(
       this.mintUrl,
@@ -347,8 +359,10 @@ export class CashuWalletService {
       expiry: quote.expiry,
     });
 
-    // Add quote to the monitoring pool for automatic minting
-    this.quotePoolManager.addQuote(quote.quote, amount, quote.expiry);
+    // Optionally monitor the quote for automatic minting
+    if (this.autoMintPaidQuotes && this.quotePoolManager) {
+      this.quotePoolManager.addQuote(quote.quote, amount, quote.expiry);
+    }
 
     return {
       quoteId: quote.quote,
@@ -746,6 +760,9 @@ export class CashuWalletService {
   }
 
   getQuotePoolStatus(): { active: number } {
+    if (!this.quotePoolManager) {
+      return { active: 0 };
+    }
     return this.quotePoolManager.getPoolStatus();
   }
 }

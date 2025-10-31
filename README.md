@@ -107,7 +107,9 @@ bun run index.ts clean-pending
 
 Configure the wallet using environment variables:
 
-- `CASHU_MINT_URL`: The mint URL to use (default: https://testnut.cashu.space)
+- `DEFAULT_MINT`: Primary mint URL to use (default: https://testnut.cashu.space)
+- `CASHU_MINT_URL`, `MINT_URL`: Legacy mint variables still honored for compatibility
+- `AUTO_MINT_PAID_QUOTES`: Set to `true` to automatically mint proofs once invoices are paid (default: false)
 - `CASHU_WALLET_DB`: Path to the wallet database file (default: ./wallet.sqlite)
 
 ### LUD06 Configuration (for Lightning Address / LNURL-pay compatibility)
@@ -123,7 +125,7 @@ The `get_info` method returns LUD06-compliant responses for Lightning Address in
 Example:
 
 ```bash
-CASHU_MINT_URL=https://your-mint.example.com \
+DEFAULT_MINT=https://your-mint.example.com \
 LUD06_CALLBACK=https://your-service.com/lnurl-pay/callback \
 LUD06_MAX_SENDABLE=1000000000 \
 LUD06_MIN_SENDABLE=1000 \
@@ -189,9 +191,11 @@ The wallet now supports the full Nostr Wallet Connect (NWC) API specification, m
    ```bash
    bun run index.ts create-mint 1000
    # Pay the Lightning invoice that is generated
-   bun run index.ts check-mint-quote <quote-id>
-   bun run index.ts mint-proofs <quote-id> 1000
-   ```
+bun run index.ts check-mint-quote <quote-id>
+bun run index.ts mint-proofs <quote-id> 1000
+```
+
+By default, the wallet waits for you to run `mint-proofs` before newly paid invoices affect your balance. Set `AUTO_MINT_PAID_QUOTES=true` if you prefer automatic minting.
 
 3. **Check your balance** (auto-cleans pending proofs):
 

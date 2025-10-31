@@ -61,7 +61,7 @@ if (!existingPrivateKey) {
   actions.push("SERVER_PRIVATE_KEY preserved");
 }
 
-ensureEnvValue("MINT_URL", "https://mint.minibits.cash/Bitcoin");
+ensureEnvValue("DEFAULT_MINT", "https://mint.minibits.cash/Bitcoin");
 
 // Ensure CASHU_WALLET_DB is uncommented and set
 ensureEnvValue("CASHU_WALLET_DB", "./wallet.sqlite", { ensureUncomment: true });
